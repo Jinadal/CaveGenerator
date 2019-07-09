@@ -5,14 +5,20 @@ using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
 {
+    //In each simulation we need at least x neightbours alive or the cell dies
     [Range(1,8)]
     public int deathlimit;
+    //In each simulation if we have more than x neightbours alive the cell revives
     [Range(1,8)]
     public int birthlimit;
+    //Map dimesions
     public int width;
     public int height;
 
+    //Times we want the simulation to repeat
     public int StepSimulations;
+
+    //Custom or random seed
     public string seed;
     public bool useRandomSeed;
 
@@ -26,12 +32,16 @@ public class MapGenerator : MonoBehaviour
         GenerateMap();   
     }
 
+    //We get a new simulation by leftclick on edit-mode
     void Update()
     {
         if (Input.GetMouseButtonDown(0))
             GenerateMap();
 
     }
+
+    //Main method to create our cave. First we generate a random map based on our RandomFillPercent. Afterwards we repeat our loop depending
+    //on our stepSimulation and acording to our birth and death selected variables.
     void GenerateMap()
     {
         map = new int[width, height];
@@ -39,10 +49,13 @@ public class MapGenerator : MonoBehaviour
         for ( int i = 0; i < StepSimulations; i++)
         {
             SimulationStep();
+            //Our new map is created according to the old one so we need 2 maps or the new changes on our map will affect to fowards decisions.
+            //After the process we take the newmap as the current one.
             map = newmap;
         }
         procressMap();
 
+        //We create a border on the map just to make it more pretty.
         int borderSize = 1;
 		int[,] borderedMap = new int[width + borderSize * 2,height + borderSize * 2];
 
@@ -61,8 +74,10 @@ public class MapGenerator : MonoBehaviour
         meshGen.GenerateMesh(borderedMap, 1);
     }
 
+    //Method for postprocess the map in order to delete the regions that don´t have a minimum of size
     void procressMap()
     {
+        //First we compare the wall in our map
         List<List<Coord>> wallRegions = getRegions(1);
         int wallThresholdSize = 50;
         foreach(List<Coord> wallRegion in wallRegions)
@@ -71,16 +86,19 @@ public class MapGenerator : MonoBehaviour
             {
                 foreach(Coord tile in wallRegion)
                 {
+                    //We transform the walls into room
                     map[tile.tileX, tile.tileY] = 0;
                 }
             }
         }
+
+        //We compare the room in our map
         List<List<Coord>> roomRegions = getRegions(0);
 		int roomThresholdSize = 50;
-		
 		foreach (List<Coord> roomRegion in roomRegions) {
 			if (roomRegion.Count < roomThresholdSize) {
 				foreach (Coord tile in roomRegion) {
+                    //We transform the room into wall
 					map[tile.tileX,tile.tileY] = 1;
 				}
 			}
@@ -88,14 +106,19 @@ public class MapGenerator : MonoBehaviour
 
     }
 
+    //We get the region that share the same type as the tile analyzed. This region will be used afterwards to compare its size 
+    //with the minimum wanted.
     List<List<Coord>> getRegions(int tileType)
     {
         List<List<Coord>> regions = new List<List<Coord>>();
+
+        //Mapflag is used for not repeating comparations. 1 == already compared.
         int[,] mapFlags = new int[width,height];
         for(int x = 0; x < width; x++)
         {
             for(int y = 0; y <height; y++)
             {
+                //Not compared tile && the same type we are looking for
                 if( mapFlags[x,y] == 0 && map[x,y] == tileType)
                 {
                     List<Coord> newRegion = getRegionTiles(x,y);
@@ -111,6 +134,7 @@ public class MapGenerator : MonoBehaviour
         return regions;
     }
 
+    //This methods compares the tiles one by one in " + " pattern. We use a queue in order to make the comparation more regular and efficient
     List<Coord> getRegionTiles(int startX, int startY)
     {
         List<Coord> tiles = new List<Coord>();
@@ -144,6 +168,7 @@ public class MapGenerator : MonoBehaviour
         return tiles;
     }
 
+    //Method that returns if a tile is inside the map
     bool IsInMapRange(int x, int y)
     {
         bool aux = false;
@@ -153,6 +178,7 @@ public class MapGenerator : MonoBehaviour
         return aux;
     }
 
+    //This lets us repeat the process and compare the neightbours in our to draw the new map based on the birth and death limits
     void SimulationStep()
     {
         newmap = new int[width, height];
@@ -188,6 +214,7 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
+    //Returns an int with the number of neightbours alive
     int countNeightbours(int x, int y)
     {
         int count = 0;
@@ -207,6 +234,10 @@ public class MapGenerator : MonoBehaviour
         }
         return count;
     }
+
+    //On our first ride we fill our map using a seed selected by us or a pseudorandom one by getting the milliseconds of our clock. 
+    //This seed will generate a pseudorandom numbre on each tile of the map which will be compared with the randomFillPercent selected
+    //and select the cell that will be alive and dead.
     void RandomFillMap()
     {
         if (useRandomSeed) {
