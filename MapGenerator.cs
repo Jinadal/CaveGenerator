@@ -51,7 +51,7 @@ public class MapGenerator : MonoBehaviour
             SimulationStep();
             //Our new map is created according to the old one so we need 2 maps or the new changes on our map will affect to fowards decisions.
             //After the process we take the newmap as the current one.
-            //map = newmap;
+            map = newmap;
         }
         procressMap();
 
@@ -124,9 +124,9 @@ public class MapGenerator : MonoBehaviour
 
         foreach(Room roomA in allRooms)
         {
+            possibleConnectionFound = false;
             foreach(Room roomB in allRooms)
             {
-                possibleConnectionFound = false;
                 if(roomA == roomB)
                 {
                     continue;
@@ -155,17 +155,17 @@ public class MapGenerator : MonoBehaviour
                     }
                 }
             }
-        }
-        if(possibleConnectionFound)
-        {
+            if(possibleConnectionFound)
+            {
             createPassage(bestRoomA,bestRoomB,bestTileA,bestTileB);
+            }
         }
     }
 
-    void createPassage(Room roomA, Room roomB, Coord tileA, Coord tileB)
+    void createPassage(Room bestRoomA, Room bestRoomB, Coord bestTileA, Coord bestTileB)
     {
-        Room.ConnectRooms (roomA, roomB);
-		Debug.DrawLine (CoordToWorldPoint (tileA), CoordToWorldPoint (tileB), Color.green, 100);
+        Room.ConnectRooms(bestRoomA,bestRoomB);
+        Debug.DrawLine(CoordToWorldPoint(bestTileA),CoordToWorldPoint(bestTileB),Color.green, 100);
     }
 
     Vector3 CoordToWorldPoint(Coord tile)
@@ -247,17 +247,37 @@ public class MapGenerator : MonoBehaviour
     //This lets us repeat the process and compare the neightbours in our to draw the new map based on the birth and death limits
     void SimulationStep()
     {
-        for (int x = 0; x < width; x ++) {
-			for (int y = 0; y < height; y ++) {
-				int neighbourWallTiles = countNeightbours(x,y);
-
-				if (neighbourWallTiles > birthlimit)
-					map[x,y] = 1;
-				else if (neighbourWallTiles < deathlimit)
-					map[x,y] = 0;
-
-			}
-		}
+        newmap = new int[width, height];
+        int neightbours = 0;
+        for( int i = 0; i < width; i++)
+        {
+            for( int j = 0; j < height; j++)
+            {
+                neightbours = countNeightbours(i,j);
+                if(map[i,j] == 1)
+                {
+                    if(neightbours < deathlimit)
+                    {
+                        newmap[i,j] = 0;
+                    }
+                    else
+                    {
+                        newmap[i,j] = 1;
+                    }
+                }
+                else
+                {
+                    if(neightbours > birthlimit)
+                    {
+                        newmap[i,j] = 1;
+                    }
+                    else
+                    {
+                        newmap[i,j] = 0;
+                    }
+                }
+            }
+        }
     }
 
     //Returns an int with the number of neightbours alive
@@ -328,24 +348,30 @@ public class MapGenerator : MonoBehaviour
 
         }
 
-        public Room(List<Coord> roomTiles, int[,] map) {
-			tiles = roomTiles;
-			roomSize = tiles.Count;
-			connectedRooms = new List<Room>();
+        public Room(List<Coord> roomTiles, int[,] map)
+        {
+            tiles = roomTiles;
+            roomSize = tiles.Count;
+            connectedRooms = new List<Room>();
 
-			edgeTiles = new List<Coord>();
-			foreach (Coord tile in tiles) {
-				for (int x = tile.tileX-1; x <= tile.tileX+1; x++) {
-					for (int y = tile.tileY-1; y <= tile.tileY+1; y++) {
-						if (x == tile.tileX || y == tile.tileY) {
-							if (map[x,y] == 1) {
-								edgeTiles.Add(tile);
-							}
-						}
-					}
-				}
-			}
-		}
+            edgeTiles = new List<Coord>();
+            foreach(Coord tile in tiles)
+            {
+                for(int i = tile.tileX - 1; i <= tile.tileX + 1; i++)
+                {
+                    for(int j = tile.tileY - 1; j <= tile.tileY + 1; j++)
+                    {
+                        if(i == tile.tileX || j == tile.tileY)
+                        {
+                            if(map[i,j] == 1)
+                            {
+                                edgeTiles.Add(tile);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         public static void ConnectRooms(Room roomA, Room roomB)
         {
