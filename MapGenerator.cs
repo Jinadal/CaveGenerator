@@ -11,9 +11,14 @@ public class MapGenerator : MonoBehaviour
     //In each simulation if we have more than x neightbours alive the cell revives
     [Range(1,8)]
     public int birthlimit;
+
+    [Range(1,5)]
+    public int corridorThickness;
+
     //Map dimesions
     public int width;
     public int height;
+
 
     //Times we want the simulation to repeat
     public int StepSimulations;
@@ -205,11 +210,11 @@ public class MapGenerator : MonoBehaviour
     void createPassage(Room bestRoomA, Room bestRoomB, Coord bestTileA, Coord bestTileB)
     {
         Room.ConnectRooms(bestRoomA,bestRoomB);
-        Debug.DrawLine(CoordToWorldPoint(bestTileA),CoordToWorldPoint(bestTileB),Color.green, 100);
+        //Debug.DrawLine(CoordToWorldPoint(bestTileA),CoordToWorldPoint(bestTileB),Color.green, 100);
         List<Coord> line = GetLine(bestTileA,bestTileB);
         foreach(Coord c in line)
         {
-            drawCircle(c,2);
+            drawCircle(c,corridorThickness);
         }
     }
 
