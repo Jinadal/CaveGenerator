@@ -321,14 +321,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4fff6bbe97d4c849920e40ab10c1da6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  deathlimit: 3
+  deathlimit: 4
   birthlimit: 4
   width: 100
   height: 100
-  StepSimulations: 3
+  StepSimulations: 5
   seed: 58
   useRandomSeed: 1
-  randomFillPercent: 40
+  randomFillPercent: 50
 --- !u!4 &1243290592
 Transform:
   m_ObjectHideFlags: 0

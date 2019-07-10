@@ -53,7 +53,7 @@ public class MapGenerator : MonoBehaviour
             //After the process we take the newmap as the current one.
             map = newmap;
         }
-        procressMap();
+        processMap();
 
         //We create a border on the map just to make it more pretty.
         int borderSize = 1;
@@ -75,7 +75,7 @@ public class MapGenerator : MonoBehaviour
     }
 
     //Method for postprocess the map in order to delete the regions that don´t have a minimum of size
-    void procressMap()
+    void processMap()
     {
         //First we compare the wall in our map
         List<List<Coord>> wallRegions = getRegions(1);
@@ -110,11 +110,39 @@ public class MapGenerator : MonoBehaviour
                 survivingRooms.Add(new Room(roomRegion, map));
             }
 		}
+        survivingRooms.Sort();
+        survivingRooms[0].isMainRoom = true;
+        survivingRooms[0].isAccessibleFromMainRoom = true;
         connectClosestRooms(survivingRooms);
     }
 
-    void connectClosestRooms(List<Room> allRooms)
+    void connectClosestRooms(List<Room> allRooms, bool forceAccessibilityFromMainRoom = false)
     {
+        //List of rooms not accesible to MainRoom
+        List<Room> RoomListA = new List<Room>();
+        //List of rooms that are accesible to MainRoom
+        List<Room> RoomListB = new List<Room>();
+
+        if(forceAccessibilityFromMainRoom)
+        {
+            foreach(Room room in allRooms)
+            {
+                if(room.isAccessibleFromMainRoom)
+                {
+                    RoomListB.Add(room);
+                }
+                else
+                {
+                    RoomListA.Add(room);
+                }
+            }
+        }
+        else
+        {
+            RoomListA = allRooms;
+            RoomListB = allRooms;
+        }
+
         int bestDistance = 0;
         Coord bestTileA = new Coord();
         Coord bestTileB = new Coord();
@@ -122,19 +150,21 @@ public class MapGenerator : MonoBehaviour
         Room bestRoomB = new Room();
         bool possibleConnectionFound = false;
 
-        foreach(Room roomA in allRooms)
+        foreach(Room roomA in RoomListA)
         {
-            possibleConnectionFound = false;
-            foreach(Room roomB in allRooms)
+            if(!forceAccessibilityFromMainRoom)
             {
-                if(roomA == roomB)
+                possibleConnectionFound = false;
+                if(roomA.connectedRooms.Count > 0)
                 {
                     continue;
                 }
-                if(roomA.isConnected(roomB))
+            }
+            foreach(Room roomB in RoomListB)
+            {
+                if(roomA == roomB || roomA.isConnected(roomB))
                 {
-                    possibleConnectionFound = false;
-                    break;
+                    continue;
                 }
                 for(int tileA = 0; tileA < roomA.edgeTiles.Count; tileA++)
                 {
@@ -155,10 +185,20 @@ public class MapGenerator : MonoBehaviour
                     }
                 }
             }
-            if(possibleConnectionFound)
+            if(possibleConnectionFound && !forceAccessibilityFromMainRoom)
             {
-            createPassage(bestRoomA,bestRoomB,bestTileA,bestTileB);
+                createPassage(bestRoomA,bestRoomB,bestTileA,bestTileB);
             }
+        }
+        if(possibleConnectionFound && forceAccessibilityFromMainRoom)
+            {
+                createPassage(bestRoomA,bestRoomB,bestTileA,bestTileB);
+                connectClosestRooms(allRooms, true);
+            }
+
+        if(!forceAccessibilityFromMainRoom)
+        {
+            connectClosestRooms(allRooms, true);
         }
     }
 
@@ -336,12 +376,15 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    class Room
+    class Room : IComparable<Room>
     {
         public List<Coord> tiles;
         public List<Coord> edgeTiles;
         public List<Room> connectedRooms;
         public int roomSize;
+        public bool isAccessibleFromMainRoom;
+        public bool isMainRoom;
+
 
         public Room()
         {
@@ -375,6 +418,14 @@ public class MapGenerator : MonoBehaviour
 
         public static void ConnectRooms(Room roomA, Room roomB)
         {
+            if(roomA.isAccessibleFromMainRoom)
+            {
+                roomB.SetAccessibleFromMainRoom();
+            }
+            else if(roomB.isAccessibleFromMainRoom)
+            {
+                roomA.SetAccessibleFromMainRoom();
+            }
             roomA.connectedRooms.Add(roomB);
             roomB.connectedRooms.Add(roomA);
         }
@@ -387,6 +438,23 @@ public class MapGenerator : MonoBehaviour
                 aux = true;
             }
             return aux;
+        }
+
+        public int CompareTo(Room otherRoom)
+        {
+            return otherRoom.roomSize.CompareTo(roomSize);
+        }
+
+        public void SetAccessibleFromMainRoom()
+        {
+            if(!isAccessibleFromMainRoom)
+            {
+                isAccessibleFromMainRoom = true;
+                foreach(Room connectedRoom in connectedRooms)
+                {
+                    connectedRoom.SetAccessibleFromMainRoom();
+                }
+            }
         }
     }
 }
