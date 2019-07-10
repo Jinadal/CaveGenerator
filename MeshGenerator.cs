@@ -44,6 +44,16 @@ public class MeshGenerator : MonoBehaviour
 		mesh.triangles = triangles.ToArray();
 		mesh.RecalculateNormals();
 
+        int tileAmount = 10;
+        Vector2[] uvs = new Vector2[vertices.Count];
+        for(int i = 0; i < vertices.Count; i++)
+        {
+            float percentX = Mathf.InverseLerp(-map.GetLength(0)/2 * squareSize, map.GetLength(0)/2*squareSize,vertices[i].x) * tileAmount;
+            float percentY = Mathf.InverseLerp(-map.GetLength(0)/2 * squareSize, map.GetLength(0)/2*squareSize,vertices[i].z) * tileAmount;
+            uvs[i] = new Vector2(percentX,percentY);
+        }
+        mesh.uv = uvs;
+
         if(is2D)
         {
             Generate2DColliders();
